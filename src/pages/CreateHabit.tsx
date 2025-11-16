@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -20,6 +21,7 @@ const CreateHabit = () => {
     name: '',
     description: '',
     type: 'positive' as 'positive' | 'negative',
+    category: 'productivity' as 'health' | 'chores' | 'hobbies' | 'productivity',
     time: '09:00',
     trigger: '',
     icon: '✅',
@@ -45,6 +47,7 @@ const CreateHabit = () => {
         name: formData.name,
         description: formData.description,
         type: formData.type,
+        category: formData.category,
         schedule: {
           time: formData.time,
           frequency: 'daily',
@@ -118,6 +121,25 @@ const CreateHabit = () => {
                     </Label>
                   </div>
                 </RadioGroup>
+              </div>
+
+              {/* Category */}
+              <div className="space-y-2">
+                <Label htmlFor="category">Category</Label>
+                <Select 
+                  value={formData.category} 
+                  onValueChange={(value) => setFormData({ ...formData, category: value as any })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="health">🏃 Health & Fitness</SelectItem>
+                    <SelectItem value="productivity">⚡ Productivity</SelectItem>
+                    <SelectItem value="hobbies">🎨 Hobbies & Learning</SelectItem>
+                    <SelectItem value="chores">🏠 Chores & Household</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Icon Selection */}

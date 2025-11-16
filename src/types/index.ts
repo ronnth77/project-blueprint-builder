@@ -1,3 +1,5 @@
+export type HabitCategory = 'health' | 'chores' | 'hobbies' | 'productivity';
+
 export interface User {
   id: string;
   email: string;
@@ -14,11 +16,13 @@ export interface Habit {
   name: string;
   description?: string;
   type: 'positive' | 'negative';
+  category: HabitCategory;
   schedule: {
     time: string;
     frequency: 'daily';
   };
   trigger?: string;
+  notes?: string;
   createdAt: string;
   updatedAt: string;
   isActive: boolean;

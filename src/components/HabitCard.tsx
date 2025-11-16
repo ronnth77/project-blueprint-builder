@@ -2,8 +2,9 @@ import { Habit } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Flame, Check, Clock } from 'lucide-react';
+import { Flame, Check, Clock, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 interface HabitCardProps {
   habit: Habit;
@@ -11,8 +12,16 @@ interface HabitCardProps {
   isCheckedInToday: boolean;
 }
 
+const categoryLabels = {
+  health: 'Health',
+  productivity: 'Work',
+  hobbies: 'Hobbies',
+  chores: 'Chores',
+};
+
 const HabitCard = ({ habit, onCheckIn, isCheckedInToday }: HabitCardProps) => {
   const isPositive = habit.type === 'positive';
+  const navigate = useNavigate();
 
   return (
     <Card 
@@ -64,9 +73,14 @@ const HabitCard = ({ habit, onCheckIn, isCheckedInToday }: HabitCardProps) => {
         )}
         
         <div className="flex items-center justify-between">
-          <Badge variant={isPositive ? "default" : "destructive"} className="text-xs">
-            {isPositive ? 'Build' : 'Break'}
-          </Badge>
+          <div className="flex gap-2">
+            <Badge variant={isPositive ? "default" : "destructive"} className="text-xs">
+              {isPositive ? 'Build' : 'Break'}
+            </Badge>
+            <Badge variant="outline" className="text-xs">
+              {categoryLabels[habit.category]}
+            </Badge>
+          </div>
           
           <div className="flex items-center gap-1 text-sm font-semibold">
             <Flame className="h-4 w-4 text-secondary" />
@@ -75,22 +89,31 @@ const HabitCard = ({ habit, onCheckIn, isCheckedInToday }: HabitCardProps) => {
           </div>
         </div>
 
-        <Button
-          onClick={() => onCheckIn(habit.id)}
-          disabled={isCheckedInToday}
-          variant={isCheckedInToday ? "outline" : "default"}
-          className="w-full"
-          size="sm"
-        >
-          {isCheckedInToday ? (
-            <>
-              <Check className="mr-2 h-4 w-4" />
-              Completed Today
-            </>
-          ) : (
-            'Check In'
-          )}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => onCheckIn(habit.id)}
+            disabled={isCheckedInToday}
+            variant={isCheckedInToday ? "outline" : "default"}
+            className="flex-1"
+            size="sm"
+          >
+            {isCheckedInToday ? (
+              <>
+                <Check className="mr-2 h-4 w-4" />
+                Completed Today
+              </>
+            ) : (
+              'Check In'
+            )}
+          </Button>
+          <Button
+            onClick={() => navigate(`/habits/${habit.id}`)}
+            variant="outline"
+            size="sm"
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
