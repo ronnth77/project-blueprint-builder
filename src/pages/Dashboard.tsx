@@ -1,20 +1,22 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAllHabits, getCheckInForDate, createCheckIn } from '@/services/mockDataService';
-import { Habit } from '@/types';
+import { Habit, HabitCategory } from '@/types';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Flame, TrendingUp, Award } from 'lucide-react';
+import { Plus, Flame, TrendingUp, Award, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import HabitCard from '@/components/HabitCard';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [habits, setHabits] = useState<Habit[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<HabitCategory | 'all'>('all');
   const today = format(new Date(), 'yyyy-MM-dd');
 
   const loadHabits = async () => {
@@ -65,6 +67,11 @@ const Dashboard = () => {
 
   const totalStreak = habits.reduce((sum, habit) => sum + habit.streakCount, 0);
   const completedToday = habits.filter(h => h.lastCheckInDate === today).length;
+
+  // Filter habits by category
+  const filteredHabits = selectedCategory === 'all' 
+    ? habits 
+    : habits.filter(h => h.category === selectedCategory);
 
   if (loading) {
     return (
@@ -144,15 +151,31 @@ const Dashboard = () => {
             <h2 className="text-2xl font-bold">Your Habits</h2>
           </div>
 
-          {habits.length === 0 ? (
+          {/* Category Filters */}
+          <Tabs value={selectedCategory} onValueChange={(v) => setSelectedCategory(v as any)} className="mb-6">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="health">🏃 Health</TabsTrigger>
+              <TabsTrigger value="productivity">⚡ Work</TabsTrigger>
+              <TabsTrigger value="hobbies">🎨 Hobbies</TabsTrigger>
+              <TabsTrigger value="chores">🏠 Chores</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {filteredHabits.length === 0 ? (
             <Card className="border-dashed border-2">
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
                   <Plus className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">No habits yet</h3>
+                <h3 className="text-lg font-semibold mb-2">
+                  {selectedCategory === 'all' ? 'No habits yet' : `No ${selectedCategory} habits yet`}
+                </h3>
                 <p className="text-muted-foreground text-center mb-4">
-                  Start building better habits by creating your first one
+                  {selectedCategory === 'all' 
+                    ? 'Start building better habits by creating your first one'
+                    : `Create a ${selectedCategory} habit to get started`
+                  }
                 </p>
                 <Button onClick={() => navigate('/habits/create')}>
                   <Plus className="mr-2 h-4 w-4" />
@@ -162,7 +185,7 @@ const Dashboard = () => {
             </Card>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {habits.map((habit) => (
+              {filteredHabits.map((habit) => (
                 <HabitCard
                   key={habit.id}
                   habit={habit}
