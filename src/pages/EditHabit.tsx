@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { createHabit } from '@/services/mockDataService';
+import { getHabitById, updateHabit } from '@/services/mockDataService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,13 +9,17 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { ArrowLeft, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { Habit, HabitTimeType } from '@/types';
 
-const CreateHabit = () => {
+const EditHabit = () => {
+  const { habitId } = useParams<{ habitId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [habit, setHabit] = useState<Habit | null>(null);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -26,17 +30,49 @@ const CreateHabit = () => {
     trigger: '',
     motivation: '',
     icon: '✅',
-    timeType: 'check-in' as 'timer' | 'check-in',
+    timeType: 'check-in' as HabitTimeType,
     duration: 30,
     isStrict: false,
     reminders: [] as string[],
   });
 
+  useEffect(() => {
+    const loadHabit = async () => {
+      if (!habitId) return;
+      
+      try {
+        const habitData = await getHabitById(habitId);
+        if (habitData) {
+          setHabit(habitData);
+          setFormData({
+            name: habitData.name,
+            description: habitData.description || '',
+            type: habitData.type,
+            category: habitData.category,
+            time: habitData.schedule.time,
+            trigger: habitData.trigger || '',
+            motivation: habitData.motivation || '',
+            icon: habitData.icon || '✅',
+            timeType: habitData.timeType,
+            duration: habitData.timeType === 'timer' ? habitData.duration : 30,
+            isStrict: habitData.timeType === 'timer' ? habitData.isStrict : false,
+            reminders: habitData.reminders || [],
+          });
+        }
+      } catch (error) {
+        console.error('Error loading habit:', error);
+        toast.error('Failed to load habit');
+      }
+    };
+
+    loadHabit();
+  }, [habitId]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user) {
-      toast.error('You must be logged in');
+    if (!user || !habitId) {
+      toast.error('Invalid request');
       return;
     }
 
@@ -48,7 +84,7 @@ const CreateHabit = () => {
     setIsLoading(true);
 
     try {
-      const habitData: any = {
+      const updates: any = {
         name: formData.name,
         description: formData.description,
         type: formData.type,
@@ -65,29 +101,58 @@ const CreateHabit = () => {
       };
 
       if (formData.timeType === 'timer') {
-        habitData.duration = formData.duration;
-        habitData.isStrict = formData.isStrict;
+        updates.duration = formData.duration;
+        updates.isStrict = formData.isStrict;
       }
 
-      await createHabit(user.id, habitData);
+      await updateHabit(habitId, updates);
 
-      toast.success('Habit created successfully!', {
-        description: 'Start building your streak today',
-      });
-      
+      toast.success('Habit updated successfully!');
       navigate('/dashboard');
     } catch (error) {
-      console.error('Error creating habit:', error);
-      toast.error('Failed to create habit');
+      console.error('Error updating habit:', error);
+      toast.error('Failed to update habit');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const addReminder = () => {
+    if (formData.reminders.length < 10) {
+      setFormData({
+        ...formData,
+        reminders: [...formData.reminders, '09:00'],
+      });
+    } else {
+      toast.error('Maximum 10 reminders allowed');
+    }
+  };
+
+  const removeReminder = (index: number) => {
+    setFormData({
+      ...formData,
+      reminders: formData.reminders.filter((_, i) => i !== index),
+    });
+  };
+
+  const updateReminder = (index: number, value: string) => {
+    const newReminders = [...formData.reminders];
+    newReminders[index] = value;
+    setFormData({ ...formData, reminders: newReminders });
   };
 
   const emojiOptions = [
     '✅', '💪', '📚', '🧘', '🏃', '💤', '🥗', '💧', 
     '🚫', '🎯', '⚡', '🔥', '🌟', '🎨', '✍️', '🎵'
   ];
+
+  if (!habit) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted py-8">
@@ -103,14 +168,15 @@ const CreateHabit = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">Create New Habit</CardTitle>
+            <CardTitle className="text-2xl">Edit Habit</CardTitle>
             <CardDescription>
-              Build a new habit or break a bad one
+              Update your habit details
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Habit Type */}
+              
+              
               <div className="space-y-3">
                 <Label>Habit Type</Label>
                 <RadioGroup
@@ -138,71 +204,48 @@ const CreateHabit = () => {
                 </RadioGroup>
               </div>
 
-              {/* Category */}
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Select 
-                  value={formData.category} 
-                  onValueChange={(value) => setFormData({ ...formData, category: value as any })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="health">🏃 Health & Fitness</SelectItem>
-                    <SelectItem value="productivity">⚡ Productivity</SelectItem>
-                    <SelectItem value="hobbies">🎨 Hobbies & Learning</SelectItem>
-                    <SelectItem value="chores">🏠 Chores & Household</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Icon Selection */}
-              <div className="space-y-3">
-                <Label>Choose an Icon</Label>
-                <div className="grid grid-cols-8 gap-2">
-                  {emojiOptions.map((emoji) => (
-                    <button
-                      key={emoji}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, icon: emoji })}
-                      className={`p-3 text-2xl border rounded-lg hover:bg-muted transition-colors ${
-                        formData.icon === emoji ? 'border-primary bg-primary/10' : ''
-                      }`}
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Habit Name */}
               <div className="space-y-2">
                 <Label htmlFor="name">Habit Name *</Label>
                 <Input
                   id="name"
-                  placeholder="e.g., Morning Meditation, Avoid Social Media"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="e.g., Morning Exercise"
                   required
                 />
               </div>
 
-              {/* Description */}
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
-                  placeholder="What does this habit involve?"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="What does this habit involve?"
                   rows={3}
                 />
               </div>
 
-              {/* Time */}
               <div className="space-y-2">
-                <Label htmlFor="time">Reminder Time</Label>
+                <Label htmlFor="category">Category</Label>
+                <Select
+                  value={formData.category}
+                  onValueChange={(value: any) => setFormData({ ...formData, category: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="health">🏥 Health & Fitness</SelectItem>
+                    <SelectItem value="productivity">💼 Work & Productivity</SelectItem>
+                    <SelectItem value="hobbies">🎨 Hobbies & Learning</SelectItem>
+                    <SelectItem value="chores">🏠 Household & Chores</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="time">Scheduled Time</Label>
                 <Input
                   id="time"
                   type="time"
@@ -211,38 +254,32 @@ const CreateHabit = () => {
                 />
               </div>
 
-              {/* Trigger */}
               <div className="space-y-2">
                 <Label htmlFor="trigger">Trigger (Optional)</Label>
                 <Input
                   id="trigger"
-                  placeholder="e.g., After waking up, Before bed"
                   value={formData.trigger}
                   onChange={(e) => setFormData({ ...formData, trigger: e.target.value })}
+                  placeholder="e.g., After breakfast"
                 />
-                <p className="text-xs text-muted-foreground">
-                  When or where will you do this habit?
-                </p>
               </div>
 
-              {/* Motivation */}
               <div className="space-y-2">
                 <Label htmlFor="motivation">Motivation Message</Label>
                 <Textarea
                   id="motivation"
-                  placeholder="Why is this habit important to you?"
                   value={formData.motivation}
                   onChange={(e) => setFormData({ ...formData, motivation: e.target.value })}
+                  placeholder="Why is this habit important to you?"
                   rows={2}
                 />
               </div>
 
-              {/* Time Type */}
               <div className="space-y-3">
                 <Label>Time Type</Label>
                 <RadioGroup
                   value={formData.timeType}
-                  onValueChange={(value: 'timer' | 'check-in') => setFormData({ ...formData, timeType: value })}
+                  onValueChange={(value: HabitTimeType) => setFormData({ ...formData, timeType: value })}
                 >
                   <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
                     <RadioGroupItem value="timer" id="timer" />
@@ -265,7 +302,6 @@ const CreateHabit = () => {
                 </RadioGroup>
               </div>
 
-              {/* Timer-specific fields */}
               {formData.timeType === 'timer' && (
                 <>
                   <div className="space-y-2">
@@ -279,19 +315,16 @@ const CreateHabit = () => {
                     />
                   </div>
                   <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
+                    <Switch
                       id="strict"
                       checked={formData.isStrict}
-                      onChange={(e) => setFormData({ ...formData, isStrict: e.target.checked })}
-                      className="h-4 w-4"
+                      onCheckedChange={(checked) => setFormData({ ...formData, isStrict: checked })}
                     />
-                    <Label htmlFor="strict" className="text-sm">Strict mode (must complete full duration)</Label>
+                    <Label htmlFor="strict">Strict mode (must complete full duration)</Label>
                   </div>
                 </>
               )}
 
-              {/* Reminders */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label>Reminders (up to 10)</Label>
@@ -299,16 +332,7 @@ const CreateHabit = () => {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      if (formData.reminders.length < 10) {
-                        setFormData({
-                          ...formData,
-                          reminders: [...formData.reminders, '09:00'],
-                        });
-                      } else {
-                        toast.error('Maximum 10 reminders allowed');
-                      }
-                    }}
+                    onClick={addReminder}
                     disabled={formData.reminders.length >= 10}
                   >
                     <Plus className="h-4 w-4 mr-1" />
@@ -320,22 +344,13 @@ const CreateHabit = () => {
                     <Input
                       type="time"
                       value={reminder}
-                      onChange={(e) => {
-                        const newReminders = [...formData.reminders];
-                        newReminders[index] = e.target.value;
-                        setFormData({ ...formData, reminders: newReminders });
-                      }}
+                      onChange={(e) => updateReminder(index, e.target.value)}
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
-                      onClick={() => {
-                        setFormData({
-                          ...formData,
-                          reminders: formData.reminders.filter((_, i) => i !== index),
-                        });
-                      }}
+                      onClick={() => removeReminder(index)}
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -343,23 +358,29 @@ const CreateHabit = () => {
                 ))}
               </div>
 
-              <div className="flex gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => navigate('/dashboard')}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={isLoading}
-                  className="flex-1"
-                >
-                  {isLoading ? 'Creating...' : 'Create Habit'}
-                </Button>
+              <div className="space-y-2">
+                <Label>Choose an Icon</Label>
+                <div className="grid grid-cols-8 gap-2">
+                  {emojiOptions.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, icon: emoji })}
+                      className={`p-3 text-2xl rounded-lg border-2 transition-colors ${
+                        formData.icon === emoji
+                          ? 'border-primary bg-primary/10'
+                          : 'border-border hover:border-primary/50'
+                      }`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
               </div>
+
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? 'Updating...' : 'Update Habit'}
+              </Button>
             </form>
           </CardContent>
         </Card>
@@ -368,4 +389,4 @@ const CreateHabit = () => {
   );
 };
 
-export default CreateHabit;
+export default EditHabit;

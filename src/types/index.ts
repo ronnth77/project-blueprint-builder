@@ -1,4 +1,5 @@
 export type HabitCategory = 'health' | 'chores' | 'hobbies' | 'productivity';
+export type HabitTimeType = 'timer' | 'check-in';
 
 export interface User {
   id: string;
@@ -10,7 +11,7 @@ export interface User {
   createdAt: string;
 }
 
-export interface Habit {
+interface BaseHabit {
   id: string;
   userId: string;
   name: string;
@@ -23,6 +24,9 @@ export interface Habit {
   };
   trigger?: string;
   notes?: string;
+  motivation?: string;
+  reminders: string[]; // Array of times in "HH:MM" format
+  timeType: HabitTimeType;
   createdAt: string;
   updatedAt: string;
   isActive: boolean;
@@ -30,6 +34,23 @@ export interface Habit {
   lastCheckInDate?: string;
   icon?: string;
 }
+
+export interface TimerHabit extends BaseHabit {
+  timeType: 'timer';
+  duration: number; // in minutes
+  isStrict: boolean;
+  timerState?: {
+    isRunning: boolean;
+    startTime?: string;
+    elapsedSeconds: number;
+  };
+}
+
+export interface CheckInHabit extends BaseHabit {
+  timeType: 'check-in';
+}
+
+export type Habit = TimerHabit | CheckInHabit;
 
 export interface HabitCheckIn {
   id: string;
