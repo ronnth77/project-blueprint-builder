@@ -5,10 +5,15 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  rewardCoins: number;
-  badges: string[];
+  totalPoints: number;
+  currentStreak: number;
+  bestStreak: number;
+  badges: Badge[];
   subscriptionTier: 'free' | 'premium';
   createdAt: string;
+  habitHistory?: {
+    [habitId: string]: HabitHistory;
+  };
 }
 
 interface BaseHabit {
@@ -68,5 +73,32 @@ export interface Badge {
   name: string;
   description: string;
   icon: string;
-  requirement: string;
+  earned: boolean;
+  dateEarned: string | null;
+}
+
+export interface PointsConfig {
+  timeframe: string;
+  points: number;
+  penalty: number;
+  duration: number; // days
+}
+
+export interface HabitHistory {
+  completions: string[]; // dates
+  misses: string[]; // dates
+  notes: string[];
+  currentPointsTier: number;
+}
+
+export interface UserProgress {
+  userId: string;
+  accountCreated: string;
+  totalPoints: number;
+  currentStreak: number;
+  bestStreak: number;
+  badges: Badge[];
+  habitHistory: {
+    [habitId: string]: HabitHistory;
+  };
 }

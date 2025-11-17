@@ -1,22 +1,27 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAllHabits, getCheckInForDate, createCheckIn } from '@/services/mockDataService';
-import { Habit, HabitCategory } from '@/types';
+import { Habit, HabitCategory, Badge } from '@/types';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Flame, TrendingUp, Award, Filter, Clock } from 'lucide-react';
+import { Plus, Flame, TrendingUp, Award, Filter, Clock, Trophy } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import HabitCard from '@/components/HabitCard';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { updateUserRewards, getNextBadgeMilestone } from '@/services/rewardService';
+import { BadgeCelebration } from '@/components/BadgeCelebration';
+import { Progress } from '@/components/ui/progress';
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [habits, setHabits] = useState<Habit[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<HabitCategory | 'all' | 'upcoming'>('upcoming');
+  const [celebrationBadge, setCelebrationBadge] = useState<Badge | null>(null);
+  const [showCelebration, setShowCelebration] = useState(false);
   const today = format(new Date(), 'yyyy-MM-dd');
 
   const loadHabits = async () => {
@@ -48,17 +53,41 @@ const Dashboard = () => {
         return;
       }
 
+      // Create check-in
       await createCheckIn(habitId, user.id, {
         date: today,
         completed: true,
         completionPercentage: 100,
       });
 
-      toast.success('Great job! Check-in recorded', {
-        icon: '🔥',
-      });
+      // Find the habit to check if it's positive
+      const habit = habits.find(h => h.id === habitId);
+      const isPositive = habit?.type === 'positive';
 
-      loadHabits();
+      // Update rewards (only for positive habits)
+      const { user: updatedUser, pointsEarned, newBadges } = await updateUserRewards(
+        user,
+        habitId,
+        true,
+        isPositive
+      );
+
+      // Show success message with points
+      if (isPositive && pointsEarned > 0) {
+        toast.success(`Check-in recorded! +${pointsEarned} points 🔥`);
+      } else {
+        toast.success('Check-in recorded! 🔥');
+      }
+
+      // Show badge celebration if earned
+      if (newBadges.length > 0) {
+        setCelebrationBadge(newBadges[0]);
+        setShowCelebration(true);
+      }
+
+      // Refresh user data and habits
+      await refreshUser();
+      await loadHabits();
     } catch (error) {
       console.error('Error checking in:', error);
       toast.error('Failed to check in');
@@ -96,6 +125,9 @@ const Dashboard = () => {
       ? habits 
       : habits.filter(h => h.category === selectedCategory);
 
+  const nextMilestone = getNextBadgeMilestone(user?.currentStreak || 0);
+  const progressToNext = ((user?.currentStreak || 0) / nextMilestone) * 100;
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -110,31 +142,28 @@ const Dashboard = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               Welcome back, {user?.name}!
             </h1>
             <p className="text-muted-foreground mt-1">
-              {completedToday === habits.length && habits.length > 0
-                ? 'All habits completed today! 🎉'
-                : `${completedToday} of ${habits.length} habits completed today`}
+              {completedToday === 0 
+                ? 'Time to build some habits today!'
+                : `Great progress! ${completedToday} habit${completedToday === 1 ? '' : 's'} completed today.`
+              }
             </p>
           </div>
-          <Button
-            onClick={() => navigate('/habits/create')}
-            size="lg"
-            className="shadow-lg hover:shadow-xl transition-shadow"
-          >
+          <Button onClick={() => navigate('/habits/create')} size="lg">
             <Plus className="mr-2 h-5 w-5" />
             New Habit
           </Button>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid gap-4 sm:grid-cols-3">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="border-2 hover:border-primary/50 transition-colors">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                <Flame className="mr-2 h-4 w-4 text-secondary" />
+                <Flame className="mr-2 h-4 w-4 text-primary" />
                 Total Streak
               </CardTitle>
             </CardHeader>
@@ -159,14 +188,48 @@ const Dashboard = () => {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
                 <Award className="mr-2 h-4 w-4 text-accent" />
-                Reward Coins
+                Total Points
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-accent">{user?.rewardCoins || 0}</div>
+              <div className="text-3xl font-bold text-accent">{user?.totalPoints || 0}</div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-2 hover:border-primary/50 transition-colors">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
+                <Trophy className="mr-2 h-4 w-4 text-primary" />
+                Badges
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-primary">{user?.badges?.length || 0}</div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Badge Progress */}
+        {user && user.currentStreak > 0 && (
+          <Card className="border-2 border-primary/20">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg">Next Badge Progress</CardTitle>
+                  <CardDescription>
+                    {user.currentStreak}/{nextMilestone} days to next badge
+                  </CardDescription>
+                </div>
+                <div className="text-4xl">
+                  {nextMilestone === 10 ? '🥉' : nextMilestone === 15 ? '🥈' : nextMilestone === 30 ? '🥇' : nextMilestone === 75 ? '💎' : nextMilestone === 150 ? '👑' : '🏆'}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Progress value={progressToNext} className="h-3" />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Habits List */}
         <div>
@@ -222,20 +285,26 @@ const Dashboard = () => {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2">
               {filteredHabits.map((habit) => (
-              <HabitCard
-                key={habit.id}
-                habit={habit}
-                onCheckIn={handleCheckIn}
-                isCheckedInToday={habit.lastCheckInDate === today}
-                onUpdate={loadHabits}
-              />
+                <HabitCard
+                  key={habit.id}
+                  habit={habit}
+                  onCheckIn={handleCheckIn}
+                  isCheckedInToday={habit.lastCheckInDate === today}
+                  onUpdate={loadHabits}
+                />
               ))}
             </div>
           )}
         </div>
       </div>
+
+      <BadgeCelebration
+        badge={celebrationBadge}
+        isOpen={showCelebration}
+        onClose={() => setShowCelebration(false)}
+      />
     </div>
   );
 };
