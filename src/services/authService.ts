@@ -13,10 +13,13 @@ export const signUp = async (email: string, password: string, name: string): Pro
     id: userId,
     email,
     name,
-    rewardCoins: 0,
+    totalPoints: 0,
+    currentStreak: 0,
+    bestStreak: 0,
     badges: [],
     subscriptionTier: 'free',
     createdAt: new Date().toISOString(),
+    habitHistory: {},
   };
   
   await saveUserData(userId, newUser);
@@ -42,10 +45,13 @@ export const signIn = async (email: string, password: string): Promise<User> => 
     id: userId,
     email,
     name: email.split('@')[0],
-    rewardCoins: 0,
+    totalPoints: 0,
+    currentStreak: 0,
+    bestStreak: 0,
     badges: [],
     subscriptionTier: 'free',
     createdAt: new Date().toISOString(),
+    habitHistory: {},
   };
   
   await saveUserData(userId, newUser);

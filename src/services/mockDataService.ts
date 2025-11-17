@@ -34,10 +34,22 @@ export const initializeDemoData = (): string => {
       id: demoUserId,
       email: 'demo@habitforge.com',
       name: 'Demo User',
-      rewardCoins: 125,
-      badges: ['daily_routine', 'week_warrior'],
+      totalPoints: 250,
+      currentStreak: 7,
+      bestStreak: 12,
+      badges: [
+        {
+          id: 'badge-10',
+          name: '10 Days',
+          description: 'Maintained a 10-day streak!',
+          icon: '🥉',
+          earned: true,
+          dateEarned: new Date().toISOString(),
+        }
+      ],
       subscriptionTier: 'free',
       createdAt: now,
+      habitHistory: {},
     };
 
     // Demo habits
