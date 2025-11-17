@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import CreateHabit from "./pages/CreateHabit";
+import EditHabit from "./pages/EditHabit";
 import HabitDetails from "./pages/HabitDetails";
 import NotFound from "./pages/NotFound";
 
@@ -37,6 +38,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <CreateHabit />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/habits/:habitId/edit"
+              element={
+                <ProtectedRoute>
+                  <EditHabit />
                 </ProtectedRoute>
               }
             />

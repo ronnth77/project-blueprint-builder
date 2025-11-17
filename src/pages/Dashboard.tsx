@@ -5,7 +5,7 @@ import { Habit, HabitCategory } from '@/types';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Flame, TrendingUp, Award, Filter } from 'lucide-react';
+import { Plus, Flame, TrendingUp, Award, Filter, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import HabitCard from '@/components/HabitCard';
@@ -16,7 +16,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [habits, setHabits] = useState<Habit[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState<HabitCategory | 'all'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<HabitCategory | 'all' | 'upcoming'>('upcoming');
   const today = format(new Date(), 'yyyy-MM-dd');
 
   const loadHabits = async () => {
@@ -68,10 +68,33 @@ const Dashboard = () => {
   const totalStreak = habits.reduce((sum, habit) => sum + habit.streakCount, 0);
   const completedToday = habits.filter(h => h.lastCheckInDate === today).length;
 
+  // Get upcoming habits (next 3 hours)
+  const getUpcomingHabits = () => {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const currentTimeInMinutes = currentHour * 60 + currentMinute;
+
+    return habits.filter(habit => {
+      const [habitHour, habitMinute] = habit.schedule.time.split(':').map(Number);
+      const habitTimeInMinutes = habitHour * 60 + habitMinute;
+      const timeDiff = habitTimeInMinutes - currentTimeInMinutes;
+      
+      // Show habits within next 3 hours (180 minutes) or that are happening now
+      return timeDiff >= -30 && timeDiff <= 180;
+    }).sort((a, b) => {
+      const [aHour, aMinute] = a.schedule.time.split(':').map(Number);
+      const [bHour, bMinute] = b.schedule.time.split(':').map(Number);
+      return (aHour * 60 + aMinute) - (bHour * 60 + bMinute);
+    });
+  };
+
   // Filter habits by category
-  const filteredHabits = selectedCategory === 'all' 
-    ? habits 
-    : habits.filter(h => h.category === selectedCategory);
+  const filteredHabits = selectedCategory === 'upcoming'
+    ? getUpcomingHabits()
+    : selectedCategory === 'all' 
+      ? habits 
+      : habits.filter(h => h.category === selectedCategory);
 
   if (loading) {
     return (
@@ -151,14 +174,29 @@ const Dashboard = () => {
             <h2 className="text-2xl font-bold">Your Habits</h2>
           </div>
 
-          {/* Category Filters */}
+          {/* Category Filter Tabs */}
           <Tabs value={selectedCategory} onValueChange={(v) => setSelectedCategory(v as any)} className="mb-6">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="health">🏃 Health</TabsTrigger>
-              <TabsTrigger value="productivity">⚡ Work</TabsTrigger>
-              <TabsTrigger value="hobbies">🎨 Hobbies</TabsTrigger>
-              <TabsTrigger value="chores">🏠 Chores</TabsTrigger>
+            <TabsList className="w-full justify-start flex-wrap h-auto gap-2 bg-transparent">
+              <TabsTrigger value="upcoming" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                <Clock className="mr-2 h-4 w-4" />
+                Upcoming
+              </TabsTrigger>
+              <TabsTrigger value="health" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                🏥 Health
+              </TabsTrigger>
+              <TabsTrigger value="productivity" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                ⚡ Work
+              </TabsTrigger>
+              <TabsTrigger value="hobbies" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                🎨 Hobbies
+              </TabsTrigger>
+              <TabsTrigger value="chores" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                🏠 Chores
+              </TabsTrigger>
+              <TabsTrigger value="all" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                <Filter className="mr-2 h-4 w-4" />
+                All
+              </TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -186,12 +224,13 @@ const Dashboard = () => {
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filteredHabits.map((habit) => (
-                <HabitCard
-                  key={habit.id}
-                  habit={habit}
-                  onCheckIn={handleCheckIn}
-                  isCheckedInToday={habit.lastCheckInDate === today}
-                />
+              <HabitCard
+                key={habit.id}
+                habit={habit}
+                onCheckIn={handleCheckIn}
+                isCheckedInToday={habit.lastCheckInDate === today}
+                onUpdate={loadHabits}
+              />
               ))}
             </div>
           )}

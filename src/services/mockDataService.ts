@@ -1,4 +1,4 @@
-import { User, Habit, HabitCheckIn } from '@/types';
+import { User, Habit, HabitCheckIn, TimerHabit, CheckInHabit } from '@/types';
 import { format, subDays } from 'date-fns';
 
 // LocalStorage keys
@@ -51,12 +51,17 @@ export const initializeDemoData = (): string => {
         category: 'health',
         schedule: { time: '07:00', frequency: 'daily' },
         trigger: 'After waking up',
+        motivation: 'Start your day with clarity and focus',
         createdAt: subDays(new Date(), 30).toISOString(),
         updatedAt: now,
         isActive: true,
         streakCount: 7,
         lastCheckInDate: format(new Date(), 'yyyy-MM-dd'),
         icon: '🧘',
+        timeType: 'timer',
+        duration: 10,
+        isStrict: true,
+        reminders: ['07:00'],
       },
       {
         id: 'habit-2',
@@ -67,12 +72,17 @@ export const initializeDemoData = (): string => {
         category: 'health',
         schedule: { time: '18:00', frequency: 'daily' },
         trigger: 'Before dinner',
+        motivation: 'Keep your body strong and healthy',
         createdAt: subDays(new Date(), 20).toISOString(),
         updatedAt: now,
         isActive: true,
         streakCount: 5,
         lastCheckInDate: format(subDays(new Date(), 1), 'yyyy-MM-dd'),
         icon: '💪',
+        timeType: 'timer',
+        duration: 30,
+        isStrict: false,
+        reminders: ['18:00'],
       },
       {
         id: 'habit-3',
@@ -83,12 +93,17 @@ export const initializeDemoData = (): string => {
         category: 'hobbies',
         schedule: { time: '20:00', frequency: 'daily' },
         trigger: 'Before sleep',
+        motivation: 'Expand your knowledge and relax before bed',
         createdAt: subDays(new Date(), 15).toISOString(),
         updatedAt: now,
         isActive: true,
         streakCount: 3,
         lastCheckInDate: format(new Date(), 'yyyy-MM-dd'),
         icon: '📚',
+        timeType: 'timer',
+        duration: 30,
+        isStrict: false,
+        reminders: ['20:00'],
       },
       {
         id: 'habit-4',
@@ -98,12 +113,15 @@ export const initializeDemoData = (): string => {
         type: 'negative',
         category: 'productivity',
         schedule: { time: '09:00', frequency: 'daily' },
+        motivation: 'Stay focused and protect your attention',
         createdAt: subDays(new Date(), 10).toISOString(),
         updatedAt: now,
         isActive: true,
         streakCount: 12,
         lastCheckInDate: format(new Date(), 'yyyy-MM-dd'),
         icon: '🚫',
+        timeType: 'check-in',
+        reminders: ['09:00', '12:00', '15:00'],
       },
     ];
 
@@ -179,20 +197,46 @@ export const getHabitById = async (habitId: string): Promise<Habit | null> => {
   return habits[habitId] || null;
 };
 
-export const createHabit = async (userId: string, habitData: Omit<Habit, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'streakCount' | 'isActive'>): Promise<Habit> => {
+export const createHabit = async (userId: string, habitData: any): Promise<Habit> => {
   const habits = getFromStorage<Record<string, Habit>>(STORAGE_KEYS.HABITS) || {};
   const habitId = `habit-${Date.now()}`;
   const now = new Date().toISOString();
   
-  const newHabit: Habit = {
-    ...habitData,
+  const baseHabit = {
     id: habitId,
     userId,
     createdAt: now,
     updatedAt: now,
     isActive: true,
     streakCount: 0,
+    name: habitData.name,
+    description: habitData.description,
+    type: habitData.type,
+    category: habitData.category,
+    schedule: habitData.schedule,
+    trigger: habitData.trigger,
+    notes: habitData.notes,
+    motivation: habitData.motivation,
+    icon: habitData.icon,
+    reminders: habitData.reminders || [],
+    timeType: habitData.timeType,
   };
+
+  let newHabit: Habit;
+  
+  if (habitData.timeType === 'timer') {
+    newHabit = {
+      ...baseHabit,
+      timeType: 'timer',
+      duration: habitData.duration || 30,
+      isStrict: habitData.isStrict || false,
+    } as TimerHabit;
+  } else {
+    newHabit = {
+      ...baseHabit,
+      timeType: 'check-in',
+    } as CheckInHabit;
+  }
   
   habits[habitId] = newHabit;
   saveToStorage(STORAGE_KEYS.HABITS, habits);
@@ -207,11 +251,11 @@ export const updateHabit = async (habitId: string, updates: Partial<Habit>): Pro
     throw new Error('Habit not found');
   }
   
-  const updatedHabit = {
+  const updatedHabit: Habit = {
     ...habit,
     ...updates,
     updatedAt: new Date().toISOString(),
-  };
+  } as Habit;
   
   habits[habitId] = updatedHabit;
   saveToStorage(STORAGE_KEYS.HABITS, habits);
