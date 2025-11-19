@@ -68,6 +68,7 @@ export const initializeDemoData = (): string => {
         updatedAt: now,
         isActive: true,
         streakCount: 7,
+        totalPointsEarned: 0,
         lastCheckInDate: format(new Date(), 'yyyy-MM-dd'),
         icon: '🧘',
         timeType: 'timer',
@@ -89,6 +90,7 @@ export const initializeDemoData = (): string => {
         updatedAt: now,
         isActive: true,
         streakCount: 5,
+        totalPointsEarned: 0,
         lastCheckInDate: format(subDays(new Date(), 1), 'yyyy-MM-dd'),
         icon: '💪',
         timeType: 'timer',
@@ -110,6 +112,7 @@ export const initializeDemoData = (): string => {
         updatedAt: now,
         isActive: true,
         streakCount: 3,
+        totalPointsEarned: 0,
         lastCheckInDate: format(new Date(), 'yyyy-MM-dd'),
         icon: '📚',
         timeType: 'timer',
@@ -130,6 +133,7 @@ export const initializeDemoData = (): string => {
         updatedAt: now,
         isActive: true,
         streakCount: 12,
+        totalPointsEarned: 0,
         lastCheckInDate: format(new Date(), 'yyyy-MM-dd'),
         icon: '🚫',
         timeType: 'check-in',
@@ -201,12 +205,41 @@ export const saveUserData = async (userId: string, userData: Partial<User>): Pro
 // Habit operations
 export const getAllHabits = async (userId: string): Promise<Habit[]> => {
   const habits = getFromStorage<Record<string, Habit>>(STORAGE_KEYS.HABITS) || {};
-  return Object.values(habits).filter((habit) => habit.userId === userId && habit.isActive);
+  const userHabits = Object.values(habits).filter((habit) => habit.userId === userId && habit.isActive);
+  
+  // Initialize totalPointsEarned for habits that don't have it
+  const updatedHabits = userHabits.map(habit => {
+    if (habit.totalPointsEarned === undefined) {
+      const updatedHabit = { ...habit, totalPointsEarned: 0 };
+      habits[habit.id] = updatedHabit;
+      return updatedHabit;
+    }
+    return habit;
+  });
+  
+  // Save updated habits if any were modified
+  if (updatedHabits.some((h, i) => h !== userHabits[i])) {
+    saveToStorage(STORAGE_KEYS.HABITS, habits);
+  }
+  
+  return updatedHabits;
 };
 
 export const getHabitById = async (habitId: string): Promise<Habit | null> => {
   const habits = getFromStorage<Record<string, Habit>>(STORAGE_KEYS.HABITS) || {};
-  return habits[habitId] || null;
+  const habit = habits[habitId];
+  
+  if (!habit) return null;
+  
+  // Initialize totalPointsEarned if missing
+  if (habit.totalPointsEarned === undefined) {
+    const updatedHabit = { ...habit, totalPointsEarned: 0 };
+    habits[habitId] = updatedHabit;
+    saveToStorage(STORAGE_KEYS.HABITS, habits);
+    return updatedHabit;
+  }
+  
+  return habit;
 };
 
 export const createHabit = async (userId: string, habitData: any): Promise<Habit> => {
@@ -221,6 +254,7 @@ export const createHabit = async (userId: string, habitData: any): Promise<Habit
     updatedAt: now,
     isActive: true,
     streakCount: 0,
+    totalPointsEarned: 0,
     name: habitData.name,
     description: habitData.description,
     type: habitData.type,

@@ -11,6 +11,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
+import ScheduleTypeSelector from '@/components/ScheduleTypeSelector';
+import { Schedule } from '@/types';
 
 const CreateHabit = () => {
   const { user } = useAuth();
@@ -32,6 +34,11 @@ const CreateHabit = () => {
     reminders: [] as string[],
   });
 
+  const [schedule, setSchedule] = useState<Schedule>({
+    time: '09:00',
+    frequency: 'daily',
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -45,6 +52,19 @@ const CreateHabit = () => {
       return;
     }
 
+    // Validate schedule selection
+    if (schedule.frequency === 'weekly' && (!schedule.daysOfWeek || schedule.daysOfWeek.length === 0)) {
+      toast.error('Please select at least one day for weekly schedule');
+      setIsLoading(false);
+      return;
+    }
+
+    if (schedule.frequency === 'monthly' && (!schedule.daysOfMonth || schedule.daysOfMonth.length === 0)) {
+      toast.error('Please select at least one day for monthly schedule');
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -54,8 +74,8 @@ const CreateHabit = () => {
         type: formData.type,
         category: formData.category,
         schedule: {
+          ...schedule,
           time: formData.time,
-          frequency: 'daily' as const,
         },
         trigger: formData.trigger,
         motivation: formData.motivation,
@@ -207,9 +227,18 @@ const CreateHabit = () => {
                   id="time"
                   type="time"
                   value={formData.time}
-                  onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, time: e.target.value });
+                    setSchedule({ ...schedule, time: e.target.value });
+                  }}
                 />
               </div>
+
+              {/* Schedule Type */}
+              <ScheduleTypeSelector
+                schedule={schedule}
+                onScheduleChange={setSchedule}
+              />
 
               {/* Trigger */}
               <div className="space-y-2">

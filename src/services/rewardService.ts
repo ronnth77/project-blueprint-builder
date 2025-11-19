@@ -1,5 +1,5 @@
-import { User, Badge, PointsConfig } from '@/types';
-import { saveUserData } from './mockDataService';
+import { User, Badge, PointsConfig, Habit } from '@/types';
+import { saveUserData, updateHabit, getHabitById } from './mockDataService';
 
 export const POINTS_CONFIG: PointsConfig[] = [
   { timeframe: 'Week 1', points: 50, penalty: -40, duration: 7 },
@@ -112,6 +112,14 @@ export const updateUserRewards = async (
     // Calculate and update points
     pointsEarned = calculatePoints(user, habitId, completed);
     updatedUser.totalPoints = (user.totalPoints || 0) + pointsEarned;
+    
+    // Update habit's cumulative points
+    const habit = await getHabitById(habitId);
+    if (habit) {
+      const currentHabitPoints = habit.totalPointsEarned || 0;
+      const newHabitPoints = currentHabitPoints + pointsEarned;
+      await updateHabit(habitId, { totalPointsEarned: newHabitPoints });
+    }
     
     // Update streak
     updatedUser = updateStreak(updatedUser, completed);

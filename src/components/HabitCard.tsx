@@ -3,7 +3,6 @@ import { Habit } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Flame, Check, ChevronDown, Edit, Trash2, Timer as TimerIcon, StickyNote } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -20,6 +19,9 @@ import {
 import { deleteHabit, updateHabit } from '@/services/mockDataService';
 import { toast } from 'sonner';
 import { NoteModal } from './NoteModal';
+import { Flame, Check, ChevronDown, Edit, Trash2, Timer as TimerIcon, StickyNote, Calendar as CalendarIcon } from 'lucide-react';
+import AnalyticsModal from './AnalyticsModal';
+
 
 interface HabitCardProps {
   habit: Habit;
@@ -64,6 +66,9 @@ const HabitCard = ({ habit, onCheckIn, isCheckedInToday, onUpdate }: HabitCardPr
   };
 
   const buttonText = isPositive ? 'Start' : 'Check In';
+
+  // Add this state variable with the other state declarations:
+  const [analyticsModalOpen, setAnalyticsModalOpen] = useState(false);
 
   return (
     <>
@@ -136,11 +141,16 @@ const HabitCard = ({ habit, onCheckIn, isCheckedInToday, onUpdate }: HabitCardPr
             </div>
           )}
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-1 text-sm">
               <Flame className="h-4 w-4 text-primary" />
               <span className="font-semibold">{habit.streakCount}</span>
               <span className="text-muted-foreground">day streak</span>
+            </div>
+            <div className="flex items-center gap-1 text-sm">
+              <span className="text-muted-foreground">•</span>
+              <span className="font-semibold text-primary">{habit.totalPointsEarned || 0}</span>
+              <span className="text-muted-foreground">pts</span>
             </div>
           </div>
 
@@ -179,6 +189,19 @@ const HabitCard = ({ habit, onCheckIn, isCheckedInToday, onUpdate }: HabitCardPr
               >
                 <StickyNote className="h-4 w-4 mr-2" />
                 Note
+              </Button>
+              {/* Analytics button in the expanded actions section */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setAnalyticsModalOpen(true);
+                }}
+              >
+                <CalendarIcon className="h-4 w-4 mr-2" />
+                Analytics
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
@@ -219,8 +242,18 @@ const HabitCard = ({ habit, onCheckIn, isCheckedInToday, onUpdate }: HabitCardPr
         initialNote={habit.notes}
         onSave={handleSaveNote}
       />
+      <AnalyticsModal
+        isOpen={analyticsModalOpen}
+        onClose={() => setAnalyticsModalOpen(false)}
+        habitName={habit.name}
+        checkIns={habit.checkIns || []}
+        streakCount={habit.streakCount || 0}
+        schedule={habit.schedule}
+        habit={habit}
+      />
     </>
   );
 };
+
 
 export default HabitCard;

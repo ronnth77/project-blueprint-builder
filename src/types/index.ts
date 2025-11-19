@@ -1,6 +1,13 @@
 export type HabitCategory = 'health' | 'chores' | 'hobbies' | 'productivity';
 export type HabitTimeType = 'timer' | 'check-in';
 
+export interface Schedule {
+  time: string; // Time in 24-hour format (e.g., "14:30")
+  frequency: 'daily' | 'weekly' | 'monthly';
+  daysOfWeek?: number[]; // 0-6, where 0 is Sunday, 1 is Monday, etc.
+  daysOfMonth?: number[]; // 1-31
+}
+
 export interface User {
   id: string;
   email: string;
@@ -23,10 +30,7 @@ interface BaseHabit {
   description?: string;
   type: 'positive' | 'negative';
   category: HabitCategory;
-  schedule: {
-    time: string;
-    frequency: 'daily';
-  };
+  schedule: Schedule; // Use the Schedule interface to support daily, weekly, and monthly
   trigger?: string;
   notes?: string;
   motivation?: string;
@@ -38,6 +42,8 @@ interface BaseHabit {
   streakCount: number;
   lastCheckInDate?: string;
   icon?: string;
+  checkIns?: HabitCheckIn[]; // Add checkIns property
+  totalPointsEarned: number; // Cumulative points earned by this habit
 }
 
 export interface TimerHabit extends BaseHabit {

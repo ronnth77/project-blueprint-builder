@@ -60,21 +60,34 @@ const Dashboard = () => {
         completionPercentage: 100,
       });
 
-      // Find the habit to check if it's positive
+      // Find the habit to check if it's positive or negative
       const habit = habits.find(h => h.id === habitId);
       const isPositive = habit?.type === 'positive';
 
-      // Update rewards (only for positive habits)
-      const { user: updatedUser, pointsEarned, newBadges } = await updateUserRewards(
-        user,
-        habitId,
-        true,
-        isPositive
-      );
+      let pointsEarned = 0;
+      let newBadges: any[] = [];
+      let updatedUser = user;
+
+      // Update rewards based on habit type
+      if (isPositive && habit) {
+        // Positive habit - use existing reward service
+        const result = await updateUserRewards(user, habitId, true, true);
+        updatedUser = result.user;
+        pointsEarned = result.pointsEarned;
+        newBadges = result.newBadges;
+      } else if (habit && !isPositive) {
+        // Break habit - use break habit reward service
+        const { updateBreakHabitRewards } = await import('@/services/breakHabitRewardService');
+        const result = await updateBreakHabitRewards(user, habit, true); // true = avoided the behavior
+        updatedUser = result.user;
+        pointsEarned = result.pointsEarned;
+      }
 
       // Show success message with points
-      if (isPositive && pointsEarned > 0) {
+      if (pointsEarned > 0) {
         toast.success(`Check-in recorded! +${pointsEarned} points 🔥`);
+      } else if (pointsEarned < 0) {
+        toast.warning(`Check-in recorded! ${pointsEarned} points`);
       } else {
         toast.success('Check-in recorded! 🔥');
       }
@@ -85,8 +98,12 @@ const Dashboard = () => {
         setShowCelebration(true);
       }
 
-      // Refresh user data and habits
-      await refreshUser();
+      // Update user context if user was updated
+      if (updatedUser) {
+        await refreshUser();
+      }
+      
+      // Refresh habits
       await loadHabits();
     } catch (error) {
       console.error('Error checking in:', error);
