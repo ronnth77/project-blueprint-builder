@@ -24,7 +24,6 @@ const CreateHabit = () => {
     description: '',
     type: 'positive' as 'positive' | 'negative',
     category: 'productivity' as 'health' | 'chores' | 'hobbies' | 'productivity',
-    time: '09:00',
     trigger: '',
     motivation: '',
     icon: '✅',
@@ -73,7 +72,6 @@ const CreateHabit = () => {
         category: formData.category,
         schedule: {
           ...schedule,
-          time: formData.time,
         },
         trigger: formData.trigger,
         motivation: formData.motivation,
@@ -217,25 +215,73 @@ const CreateHabit = () => {
                 />
               </div>
 
-              {/* Time */}
-              <div className="space-y-2">
-                <Label htmlFor="time">Reminder Time</Label>
-                <Input
-                  id="time"
-                  type="time"
-                  value={formData.time}
-                  onChange={(e) => {
-                    setFormData({ ...formData, time: e.target.value });
-                    setSchedule({ ...schedule, time: e.target.value });
-                  }}
-                />
-              </div>
-
               {/* Schedule Type */}
               <ScheduleTypeSelector
                 schedule={schedule}
                 onScheduleChange={setSchedule}
               />
+
+              {/* Reminders */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Reminders (up to 10)</Label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Set multiple reminder times throughout the day
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (formData.reminders.length < 10) {
+                        setFormData({
+                          ...formData,
+                          reminders: [...formData.reminders, schedule.time || '09:00'],
+                        });
+                      } else {
+                        toast.error('Maximum 10 reminders allowed');
+                      }
+                    }}
+                    disabled={formData.reminders.length >= 10}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add
+                  </Button>
+                </div>
+                {formData.reminders.length === 0 && (
+                  <p className="text-sm text-muted-foreground italic">
+                    No reminders set. Click "Add" to add a reminder time.
+                  </p>
+                )}
+                {formData.reminders.map((reminder, index) => (
+                  <div key={index} className="flex gap-2">
+                    <Input
+                      type="time"
+                      value={reminder}
+                      onChange={(e) => {
+                        const newReminders = [...formData.reminders];
+                        newReminders[index] = e.target.value;
+                        setFormData({ ...formData, reminders: newReminders });
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setFormData({
+                          ...formData,
+                          reminders: formData.reminders.filter((_, i) => i !== index),
+                        });
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
 
               {/* Trigger */}
               <div className="space-y-2">
@@ -278,58 +324,6 @@ const CreateHabit = () => {
                   </p>
                 </div>
               )}
-
-              {/* Reminders */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label>Reminders (up to 10)</Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      if (formData.reminders.length < 10) {
-                        setFormData({
-                          ...formData,
-                          reminders: [...formData.reminders, '09:00'],
-                        });
-                      } else {
-                        toast.error('Maximum 10 reminders allowed');
-                      }
-                    }}
-                    disabled={formData.reminders.length >= 10}
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add
-                  </Button>
-                </div>
-                {formData.reminders.map((reminder, index) => (
-                  <div key={index} className="flex gap-2">
-                    <Input
-                      type="time"
-                      value={reminder}
-                      onChange={(e) => {
-                        const newReminders = [...formData.reminders];
-                        newReminders[index] = e.target.value;
-                        setFormData({ ...formData, reminders: newReminders });
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        setFormData({
-                          ...formData,
-                          reminders: formData.reminders.filter((_, i) => i !== index),
-                        });
-                      }}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
 
               <div className="flex gap-3">
                 <Button

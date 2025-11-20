@@ -280,6 +280,50 @@ const EditHabit = () => {
                 onScheduleChange={setSchedule}
               />
 
+              {/* Reminders */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Reminders (up to 10)</Label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Set multiple reminder times throughout the day
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addReminder}
+                    disabled={formData.reminders.length >= 10}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add
+                  </Button>
+                </div>
+                {formData.reminders.length === 0 && (
+                  <p className="text-sm text-muted-foreground italic">
+                    No reminders set. Click "Add" to add a reminder time.
+                  </p>
+                )}
+                {formData.reminders.map((reminder, index) => (
+                  <div key={index} className="flex gap-2">
+                    <Input
+                      type="time"
+                      value={reminder}
+                      onChange={(e) => updateReminder(index, e.target.value)}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeReminder(index)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="trigger">Trigger (Optional)</Label>
                 <Input
@@ -316,39 +360,6 @@ const EditHabit = () => {
                   </p>
                 </div>
               )}
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label>Reminders (up to 10)</Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addReminder}
-                    disabled={formData.reminders.length >= 10}
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add
-                  </Button>
-                </div>
-                {formData.reminders.map((reminder, index) => (
-                  <div key={index} className="flex gap-2">
-                    <Input
-                      type="time"
-                      value={reminder}
-                      onChange={(e) => updateReminder(index, e.target.value)}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeReminder(index)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
 
               <div className="space-y-2">
                 <Label>Choose an Icon</Label>

@@ -15,6 +15,7 @@ import { BadgeCelebration } from '@/components/BadgeCelebration';
 import { Progress } from '@/components/ui/progress';
 import ConfirmationDialog from '@/components/ConfirmationDialog';
 import { useNotificationScheduler } from '@/services/notificationScheduler';
+import HelpButton from '@/components/HelpButton';
 
 const Dashboard = () => {
   const { user, refreshUser } = useAuth();
@@ -244,10 +245,13 @@ const Dashboard = () => {
               }
             </p>
           </div>
-          <Button onClick={() => navigate('/habits/create')} size="lg">
-            <Plus className="mr-2 h-5 w-5" />
-            New Habit
-          </Button>
+          <div className="flex items-center gap-3">
+            <HelpButton />
+            <Button onClick={() => navigate('/habits/create')} size="lg">
+              <Plus className="mr-2 h-5 w-5" />
+              New Habit
+            </Button>
+          </div>
         </div>
 
         {/* Stats Grid */}
