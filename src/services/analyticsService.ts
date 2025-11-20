@@ -77,7 +77,7 @@ export const calculateAverageStreak = (checkIns: HabitCheckIn[]): number => {
 /**
  * Check if a date is a scheduled day based on the habit's schedule
  */
-const isScheduledDay = (date: Date, schedule: Schedule, habitCreatedAt: Date): boolean => {
+export const isScheduledDay = (date: Date, schedule: Schedule, habitCreatedAt: Date): boolean => {
   const today = startOfDay(new Date());
   const checkDate = startOfDay(date);
   const createdDate = startOfDay(habitCreatedAt);

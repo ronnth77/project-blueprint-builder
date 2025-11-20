@@ -1,5 +1,4 @@
 export type HabitCategory = 'health' | 'chores' | 'hobbies' | 'productivity';
-export type HabitTimeType = 'timer' | 'check-in';
 
 export interface Schedule {
   time: string; // Time in 24-hour format (e.g., "14:30")
@@ -23,7 +22,7 @@ export interface User {
   };
 }
 
-interface BaseHabit {
+export interface Habit {
   id: string;
   userId: string;
   name: string;
@@ -35,7 +34,7 @@ interface BaseHabit {
   notes?: string;
   motivation?: string;
   reminders: string[]; // Array of times in "HH:MM" format
-  timeType: HabitTimeType;
+  confirmationTime?: string; // Time for end-of-day confirmation (break habits only) in "HH:MM" format
   createdAt: string;
   updatedAt: string;
   isActive: boolean;
@@ -45,23 +44,6 @@ interface BaseHabit {
   checkIns?: HabitCheckIn[]; // Add checkIns property
   totalPointsEarned: number; // Cumulative points earned by this habit
 }
-
-export interface TimerHabit extends BaseHabit {
-  timeType: 'timer';
-  duration: number; // in minutes
-  isStrict: boolean;
-  timerState?: {
-    isRunning: boolean;
-    startTime?: string;
-    elapsedSeconds: number;
-  };
-}
-
-export interface CheckInHabit extends BaseHabit {
-  timeType: 'check-in';
-}
-
-export type Habit = TimerHabit | CheckInHabit;
 
 export interface HabitCheckIn {
   id: string;

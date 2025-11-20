@@ -28,9 +28,7 @@ const CreateHabit = () => {
     trigger: '',
     motivation: '',
     icon: '✅',
-    timeType: 'check-in' as 'timer' | 'check-in',
-    duration: 30,
-    isStrict: false,
+    confirmationTime: '21:00', // Default end-of-day confirmation time for break habits
     reminders: [] as string[],
   });
 
@@ -80,13 +78,12 @@ const CreateHabit = () => {
         trigger: formData.trigger,
         motivation: formData.motivation,
         icon: formData.icon,
-        timeType: formData.timeType,
         reminders: formData.reminders,
       };
 
-      if (formData.timeType === 'timer') {
-        habitData.duration = formData.duration;
-        habitData.isStrict = formData.isStrict;
+      // Add confirmation time for break habits only
+      if (formData.type === 'negative') {
+        habitData.confirmationTime = formData.confirmationTime;
       }
 
       await createHabit(user.id, habitData);
@@ -266,58 +263,20 @@ const CreateHabit = () => {
                 />
               </div>
 
-              {/* Time Type */}
-              <div className="space-y-3">
-                <Label>Time Type</Label>
-                <RadioGroup
-                  value={formData.timeType}
-                  onValueChange={(value: 'timer' | 'check-in') => setFormData({ ...formData, timeType: value })}
-                >
-                  <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
-                    <RadioGroupItem value="timer" id="timer" />
-                    <Label htmlFor="timer" className="flex-1 cursor-pointer">
-                      <div className="font-semibold">Timer-based</div>
-                      <div className="text-sm text-muted-foreground">
-                        Track duration of the activity
-                      </div>
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
-                    <RadioGroupItem value="check-in" id="check-in" />
-                    <Label htmlFor="check-in" className="flex-1 cursor-pointer">
-                      <div className="font-semibold">Check-in</div>
-                      <div className="text-sm text-muted-foreground">
-                        Simple daily check-in
-                      </div>
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </div>
-
-              {/* Timer-specific fields */}
-              {formData.timeType === 'timer' && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="duration">Duration (minutes)</Label>
-                    <Input
-                      id="duration"
-                      type="number"
-                      min="1"
-                      value={formData.duration}
-                      onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 30 })}
-                    />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="strict"
-                      checked={formData.isStrict}
-                      onChange={(e) => setFormData({ ...formData, isStrict: e.target.checked })}
-                      className="h-4 w-4"
-                    />
-                    <Label htmlFor="strict" className="text-sm">Strict mode (must complete full duration)</Label>
-                  </div>
-                </>
+              {/* Confirmation Time (Break Habits Only) */}
+              {formData.type === 'negative' && (
+                <div className="space-y-2">
+                  <Label htmlFor="confirmationTime">End of Day Confirmation Time</Label>
+                  <Input
+                    id="confirmationTime"
+                    type="time"
+                    value={formData.confirmationTime}
+                    onChange={(e) => setFormData({ ...formData, confirmationTime: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Time to confirm if you avoided this habit today
+                  </p>
+                </div>
               )}
 
               {/* Reminders */}

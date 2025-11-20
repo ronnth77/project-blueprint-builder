@@ -13,6 +13,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { updateUserRewards, getNextBadgeMilestone } from '@/services/rewardService';
 import { BadgeCelebration } from '@/components/BadgeCelebration';
 import { Progress } from '@/components/ui/progress';
+import ConfirmationDialog from '@/components/ConfirmationDialog';
+import { useNotificationScheduler } from '@/services/notificationScheduler';
 
 const Dashboard = () => {
   const { user, refreshUser } = useAuth();
@@ -22,7 +24,20 @@ const Dashboard = () => {
   const [selectedCategory, setSelectedCategory] = useState<HabitCategory | 'all' | 'upcoming'>('upcoming');
   const [celebrationBadge, setCelebrationBadge] = useState<Badge | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [confirmationDialog, setConfirmationDialog] = useState<{ isOpen: boolean; habit: Habit | null }>({
+    isOpen: false,
+    habit: null,
+  });
   const today = format(new Date(), 'yyyy-MM-dd');
+  
+  // Initialize notification scheduler
+  useNotificationScheduler({
+    habits,
+    user,
+    onConfirmationNeeded: (habit: Habit) => {
+      setConfirmationDialog({ isOpen: true, habit });
+    },
+  });
 
   const loadHabits = async () => {
     if (!user) return;
@@ -108,6 +123,66 @@ const Dashboard = () => {
     } catch (error) {
       console.error('Error checking in:', error);
       toast.error('Failed to check in');
+    }
+  };
+
+  const handleConfirmation = async (avoided: boolean) => {
+    if (!user || !confirmationDialog.habit) return;
+
+    try {
+      const habit = confirmationDialog.habit;
+      
+      // Check if already confirmed today
+      const existingCheckIn = await getCheckInForDate(habit.id, today);
+      if (existingCheckIn) {
+        toast.info('Already confirmed for today!');
+        setConfirmationDialog({ isOpen: false, habit: null });
+        return;
+      }
+
+      // Create check-in
+      await createCheckIn(habit.id, user.id, {
+        date: today,
+        completed: avoided,
+        completionPercentage: avoided ? 100 : 0,
+      });
+
+      let pointsEarned = 0;
+      let updatedUser = user;
+
+      // Update rewards using break habit service
+      const { updateBreakHabitRewards } = await import('@/services/breakHabitRewardService');
+      const result = await updateBreakHabitRewards(user, habit, avoided);
+      updatedUser = result.user;
+      pointsEarned = result.pointsEarned;
+
+      // Show appropriate message
+      if (avoided) {
+        if (pointsEarned > 0) {
+          toast.success(`Great job avoiding it! +${pointsEarned} points 🔥`);
+        } else {
+          toast.success('Great job avoiding it! 🔥');
+        }
+      } else {
+        if (pointsEarned < 0) {
+          toast.warning(`That's okay, tomorrow is a new day! ${pointsEarned} points`);
+        } else {
+          toast.info("That's okay, tomorrow is a new day!");
+        }
+      }
+
+      // Update user context
+      if (updatedUser) {
+        await refreshUser();
+      }
+
+      // Close dialog and refresh habits
+      setConfirmationDialog({ isOpen: false, habit: null });
+      await loadHabits();
+    } catch (error) {
+      console.error('Error confirming:', error);
+      toast.error('Failed to confirm');
+      setConfirmationDialog({ isOpen: false, habit: null });
     }
   };
 
@@ -322,6 +397,14 @@ const Dashboard = () => {
         isOpen={showCelebration}
         onClose={() => setShowCelebration(false)}
       />
+
+      {confirmationDialog.habit && (
+        <ConfirmationDialog
+          isOpen={confirmationDialog.isOpen}
+          habit={confirmationDialog.habit}
+          onConfirm={handleConfirmation}
+        />
+      )}
     </div>
   );
 };

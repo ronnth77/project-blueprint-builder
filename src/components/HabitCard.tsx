@@ -19,7 +19,7 @@ import {
 import { deleteHabit, updateHabit } from '@/services/mockDataService';
 import { toast } from 'sonner';
 import { NoteModal } from './NoteModal';
-import { Flame, Check, ChevronDown, Edit, Trash2, Timer as TimerIcon, StickyNote, Calendar as CalendarIcon } from 'lucide-react';
+import { Flame, Check, ChevronDown, Edit, Trash2, StickyNote, Calendar as CalendarIcon } from 'lucide-react';
 import AnalyticsModal from './AnalyticsModal';
 
 
@@ -65,7 +65,8 @@ const HabitCard = ({ habit, onCheckIn, isCheckedInToday, onUpdate }: HabitCardPr
     }
   };
 
-  const buttonText = isPositive ? 'Start' : 'Check In';
+  // Determine button text based on check-in status
+  const buttonText = isCheckedInToday ? 'Checked In' : 'Check In';
 
   // Add this state variable with the other state declarations:
   const [analyticsModalOpen, setAnalyticsModalOpen] = useState(false);
@@ -97,12 +98,6 @@ const HabitCard = ({ habit, onCheckIn, isCheckedInToday, onUpdate }: HabitCardPr
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <CardTitle className="text-lg">{habit.name}</CardTitle>
-                  {habit.timeType === 'timer' && (
-                    <Badge variant="outline" className="text-xs">
-                      <TimerIcon className="h-3 w-3 mr-1" />
-                      {habit.duration}m
-                    </Badge>
-                  )}
                   {habit.notes && (
                     <StickyNote className="h-4 w-4 text-primary" />
                   )}
@@ -154,11 +149,13 @@ const HabitCard = ({ habit, onCheckIn, isCheckedInToday, onUpdate }: HabitCardPr
             </div>
           </div>
 
-          {!isCheckedInToday && (
+          {/* Check-in button - only for build habits */}
+          {isPositive && (
             <Button 
               onClick={() => onCheckIn(habit.id)}
               className="w-full"
-              variant={isPositive ? "default" : "outline"}
+              variant={isCheckedInToday ? "outline" : "default"}
+              disabled={isCheckedInToday}
             >
               {buttonText}
             </Button>

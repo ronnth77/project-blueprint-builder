@@ -71,9 +71,6 @@ export const initializeDemoData = (): string => {
         totalPointsEarned: 0,
         lastCheckInDate: format(new Date(), 'yyyy-MM-dd'),
         icon: '🧘',
-        timeType: 'timer',
-        duration: 10,
-        isStrict: true,
         reminders: ['07:00'],
       },
       {
@@ -93,9 +90,6 @@ export const initializeDemoData = (): string => {
         totalPointsEarned: 0,
         lastCheckInDate: format(subDays(new Date(), 1), 'yyyy-MM-dd'),
         icon: '💪',
-        timeType: 'timer',
-        duration: 30,
-        isStrict: false,
         reminders: ['18:00'],
       },
       {
@@ -115,9 +109,6 @@ export const initializeDemoData = (): string => {
         totalPointsEarned: 0,
         lastCheckInDate: format(new Date(), 'yyyy-MM-dd'),
         icon: '📚',
-        timeType: 'timer',
-        duration: 30,
-        isStrict: false,
         reminders: ['20:00'],
       },
       {
@@ -136,7 +127,7 @@ export const initializeDemoData = (): string => {
         totalPointsEarned: 0,
         lastCheckInDate: format(new Date(), 'yyyy-MM-dd'),
         icon: '🚫',
-        timeType: 'check-in',
+        confirmationTime: '21:00', // End of day confirmation time for break habits
         reminders: ['09:00', '12:00', '15:00'],
       },
     ];
@@ -202,19 +193,35 @@ export const saveUserData = async (userId: string, userData: Partial<User>): Pro
   return updatedUser;
 };
 
+// Migrate timer habits to check-in type (remove timer fields)
+const migrateTimerHabit = (habit: any): Habit => {
+  // Remove timer-related fields if they exist
+  const { duration, isStrict, timerState, timeType, ...rest } = habit;
+  return rest as Habit;
+};
+
 // Habit operations
 export const getAllHabits = async (userId: string): Promise<Habit[]> => {
   const habits = getFromStorage<Record<string, Habit>>(STORAGE_KEYS.HABITS) || {};
   const userHabits = Object.values(habits).filter((habit) => habit.userId === userId && habit.isActive);
   
-  // Initialize totalPointsEarned for habits that don't have it
+  // Migrate timer habits and initialize totalPointsEarned
   const updatedHabits = userHabits.map(habit => {
-    if (habit.totalPointsEarned === undefined) {
-      const updatedHabit = { ...habit, totalPointsEarned: 0 };
+    let updatedHabit = habit;
+    
+    // Migrate timer habits to check-in (remove timer fields)
+    if ('timeType' in habit || 'duration' in habit || 'isStrict' in habit || 'timerState' in habit) {
+      updatedHabit = migrateTimerHabit(habit);
       habits[habit.id] = updatedHabit;
-      return updatedHabit;
     }
-    return habit;
+    
+    // Initialize totalPointsEarned if missing
+    if (updatedHabit.totalPointsEarned === undefined) {
+      updatedHabit = { ...updatedHabit, totalPointsEarned: 0 };
+      habits[habit.id] = updatedHabit;
+    }
+    
+    return updatedHabit;
   });
   
   // Save updated habits if any were modified
@@ -227,16 +234,29 @@ export const getAllHabits = async (userId: string): Promise<Habit[]> => {
 
 export const getHabitById = async (habitId: string): Promise<Habit | null> => {
   const habits = getFromStorage<Record<string, Habit>>(STORAGE_KEYS.HABITS) || {};
-  const habit = habits[habitId];
+  let habit = habits[habitId];
   
   if (!habit) return null;
   
+  let updated = false;
+  
+  // Migrate timer habit to check-in (remove timer fields)
+  if ('timeType' in habit || 'duration' in habit || 'isStrict' in habit || 'timerState' in habit) {
+    habit = migrateTimerHabit(habit);
+    habits[habitId] = habit;
+    updated = true;
+  }
+  
   // Initialize totalPointsEarned if missing
   if (habit.totalPointsEarned === undefined) {
-    const updatedHabit = { ...habit, totalPointsEarned: 0 };
-    habits[habitId] = updatedHabit;
+    habit = { ...habit, totalPointsEarned: 0 };
+    habits[habitId] = habit;
+    updated = true;
+  }
+  
+  // Save if updated
+  if (updated) {
     saveToStorage(STORAGE_KEYS.HABITS, habits);
-    return updatedHabit;
   }
   
   return habit;
@@ -247,7 +267,7 @@ export const createHabit = async (userId: string, habitData: any): Promise<Habit
   const habitId = `habit-${Date.now()}`;
   const now = new Date().toISOString();
   
-  const baseHabit = {
+  const newHabit: Habit = {
     id: habitId,
     userId,
     createdAt: now,
@@ -265,24 +285,8 @@ export const createHabit = async (userId: string, habitData: any): Promise<Habit
     motivation: habitData.motivation,
     icon: habitData.icon,
     reminders: habitData.reminders || [],
-    timeType: habitData.timeType,
+    confirmationTime: habitData.confirmationTime, // Only for break habits
   };
-
-  let newHabit: Habit;
-  
-  if (habitData.timeType === 'timer') {
-    newHabit = {
-      ...baseHabit,
-      timeType: 'timer',
-      duration: habitData.duration || 30,
-      isStrict: habitData.isStrict || false,
-    } as TimerHabit;
-  } else {
-    newHabit = {
-      ...baseHabit,
-      timeType: 'check-in',
-    } as CheckInHabit;
-  }
   
   habits[habitId] = newHabit;
   saveToStorage(STORAGE_KEYS.HABITS, habits);

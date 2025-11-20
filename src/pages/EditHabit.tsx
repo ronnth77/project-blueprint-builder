@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { ArrowLeft, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { Habit, HabitTimeType, Schedule } from '@/types';
+import { Habit, Schedule } from '@/types';
 import ScheduleTypeSelector from '@/components/ScheduleTypeSelector';
 
 const EditHabit = () => {
@@ -35,9 +35,7 @@ const EditHabit = () => {
     trigger: '',
     motivation: '',
     icon: '✅',
-    timeType: 'check-in' as HabitTimeType,
-    duration: 30,
-    isStrict: false,
+    confirmationTime: '21:00',
     reminders: [] as string[],
   });
 
@@ -59,9 +57,7 @@ const EditHabit = () => {
             trigger: habitData.trigger || '',
             motivation: habitData.motivation || '',
             icon: habitData.icon || '✅',
-            timeType: habitData.timeType,
-            duration: habitData.timeType === 'timer' ? habitData.duration : 30,
-            isStrict: habitData.timeType === 'timer' ? habitData.isStrict : false,
+            confirmationTime: habitData.confirmationTime || '21:00',
             reminders: habitData.reminders || [],
           });
         }
@@ -115,13 +111,15 @@ const EditHabit = () => {
         trigger: formData.trigger,
         motivation: formData.motivation,
         icon: formData.icon,
-        timeType: formData.timeType,
         reminders: formData.reminders,
       };
 
-      if (formData.timeType === 'timer') {
-        updates.duration = formData.duration;
-        updates.isStrict = formData.isStrict;
+      // Add confirmation time for break habits only
+      if (formData.type === 'negative') {
+        updates.confirmationTime = formData.confirmationTime;
+      } else {
+        // Remove confirmation time for build habits
+        updates.confirmationTime = undefined;
       }
 
       await updateHabit(habitId, updates);
@@ -303,54 +301,20 @@ const EditHabit = () => {
                 />
               </div>
 
-              <div className="space-y-3">
-                <Label>Time Type</Label>
-                <RadioGroup
-                  value={formData.timeType}
-                  onValueChange={(value: HabitTimeType) => setFormData({ ...formData, timeType: value })}
-                >
-                  <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
-                    <RadioGroupItem value="timer" id="timer" />
-                    <Label htmlFor="timer" className="flex-1 cursor-pointer">
-                      <div className="font-semibold">Timer-based</div>
-                      <div className="text-sm text-muted-foreground">
-                        Track duration of the activity
-                      </div>
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
-                    <RadioGroupItem value="check-in" id="check-in" />
-                    <Label htmlFor="check-in" className="flex-1 cursor-pointer">
-                      <div className="font-semibold">Check-in</div>
-                      <div className="text-sm text-muted-foreground">
-                        Simple daily check-in
-                      </div>
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </div>
-
-              {formData.timeType === 'timer' && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="duration">Duration (minutes)</Label>
-                    <Input
-                      id="duration"
-                      type="number"
-                      min="1"
-                      value={formData.duration}
-                      onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 30 })}
-                    />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="strict"
-                      checked={formData.isStrict}
-                      onCheckedChange={(checked) => setFormData({ ...formData, isStrict: checked })}
-                    />
-                    <Label htmlFor="strict">Strict mode (must complete full duration)</Label>
-                  </div>
-                </>
+              {/* Confirmation Time (Break Habits Only) */}
+              {formData.type === 'negative' && (
+                <div className="space-y-2">
+                  <Label htmlFor="confirmationTime">End of Day Confirmation Time</Label>
+                  <Input
+                    id="confirmationTime"
+                    type="time"
+                    value={formData.confirmationTime}
+                    onChange={(e) => setFormData({ ...formData, confirmationTime: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Time to confirm if you avoided this habit today
+                  </p>
+                </div>
               )}
 
               <div className="space-y-3">
