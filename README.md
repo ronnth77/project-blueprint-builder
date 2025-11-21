@@ -191,13 +191,9 @@ npm run dev### Build for Production
 npm run build
 npm run preview## 📱 Live Demo
 
-🔗 **Try it live**: [Deploy to get URL](#deployment-instructions)
+🔗 **Try it live**: [https://habitloop-prototype-tanmoys-projects-a793323a.vercel.app](https://habitloop-prototype-tanmoys-projects-a793323a.vercel.app)
 
-> 💡 *To deploy:*
-> 1. **Via Vercel (Recommended)**: Visit [vercel.com](https://vercel.com), sign in with GitHub, import this repo, and deploy
-> 2. **Via CLI**: Run `vercel login` then `vercel --yes` in the project directory
-> 
-> The `vercel.json` config file is already set up for proper routing!
+> 💡 *Deployed on [Vercel](https://vercel.com)*
 
 ## 🎯 Future Enhancements
 
