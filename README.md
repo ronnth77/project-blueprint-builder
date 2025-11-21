@@ -186,10 +186,17 @@ cd project-blueprint-builder
 npm install
 
 # Start development server
-npm run dev### Build for Production
+npm run dev
+```
 
+### Build for Production
+
+```bash
 npm run build
-npm run preview## 📱 Live Demo
+npm run preview
+```
+
+## 📱 Live Demo
 
 🔗 **Try it live**: [https://habitloop-prototype-tanmoys-projects-a793323a.vercel.app](https://habitloop-prototype-tanmoys-projects-a793323a.vercel.app)
 
