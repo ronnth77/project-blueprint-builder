@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { format, addMonths, subMonths, isToday, isAfter } from 'date-fns';
+import { format, addMonths, subMonths, isToday, isAfter, isBefore, startOfDay } from 'date-fns';
 import { useState, useMemo, useEffect } from 'react';
 import { HabitCheckIn, Schedule, Habit } from '@/types';
 import { cn } from '@/lib/utils';
@@ -68,9 +68,17 @@ const AnalyticsModal = ({
   const isScheduledDay = (date: Date): boolean => {
     const day = date.getDay(); // 0-6 (Sun-Sat)
     const dateNum = date.getDate();
-    const today = new Date();
-
-    if (isAfter(date, today)) return false; // Don't show future days as scheduled
+    const today = startOfDay(new Date());
+    const checkDate = startOfDay(date);
+    
+    // Don't show future days as scheduled
+    if (isAfter(checkDate, today)) return false;
+    
+    // Don't count days before habit creation
+    if (habit?.createdAt) {
+      const createdDate = startOfDay(new Date(habit.createdAt));
+      if (isBefore(checkDate, createdDate)) return false;
+    }
 
     switch (schedule.frequency) {
       case 'daily':
@@ -87,8 +95,17 @@ const AnalyticsModal = ({
   // Get status for a specific day
   const getDayStatus = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
-    const today = new Date();
+    const today = startOfDay(new Date());
     const todayStr = format(today, 'yyyy-MM-dd');
+    const checkDate = startOfDay(date);
+    
+    // If date is before habit creation, it's not scheduled (should be grey/white)
+    if (habit?.createdAt) {
+      const createdDate = startOfDay(new Date(habit.createdAt));
+      if (isBefore(checkDate, createdDate)) {
+        return 'not-scheduled';
+      }
+    }
     
     // If we have check-ins data, use it
     if (checkInData && checkInData.length > 0) {
@@ -175,7 +192,7 @@ const AnalyticsModal = ({
     }
 
     return daysArray;
-  }, [year, month, daysInMonth, firstDayOfMonth, checkInData, schedule, streakCount]);
+  }, [year, month, daysInMonth, firstDayOfMonth, checkInData, schedule, streakCount, habit?.createdAt]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
