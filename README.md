@@ -202,6 +202,44 @@ npm run preview
 
 > 💡 *Deployed on [Vercel](https://vercel.com)*
 
+## 📸 Screenshots
+
+### Authentication
+<div align="center">
+  <img src="Screenshots/login.png.png" alt="Login Page" width="400"/>
+  <img src="Screenshots/signup.png.png" alt="Signup Page" width="400"/>
+</div>
+
+### Dashboard
+<div align="center">
+  <img src="Screenshots/dashboard.png.png" alt="Dashboard with habits and stats" width="800"/>
+</div>
+
+### Habit Creation
+<div align="center">
+  <img src="Screenshots/create-habit-1.png.png" alt="Create Habit Form - Basic Info" width="400"/>
+  <img src="Screenshots/create-habit-2.png.png" alt="Create Habit Form - Schedule & Reminders" width="400"/>
+</div>
+
+### Schedule Type Selection
+<div align="center">
+  <img src="Screenshots/schedule-daily.png.png" alt="Daily Schedule Selection" width="300"/>
+  <img src="Screenshots/schedule-weekly.png.png" alt="Weekly Schedule Selection" width="300"/>
+  <img src="Screenshots/schedule-monthly.png.png" alt="Monthly Schedule Selection" width="300"/>
+</div>
+
+### Habit Card & Analytics
+<div align="center">
+  <img src="Screenshots/habit-card.png.png" alt="Habit Card with actions" width="400"/>
+  <img src="Screenshots/analytics-calendar.png.png" alt="Analytics Modal with Calendar" width="400"/>
+</div>
+
+### Help System
+<div align="center">
+  <img src="Screenshots/help-dropdown.png.png" alt="Help Button Dropdown" width="400"/>
+  <img src="Screenshots/help-dialog.png.png" alt="Help Dialog Content" width="400"/>
+</div>
+
 ## 🎯 Future Enhancements
 
 - [ ] Session Feedback feature implementation
