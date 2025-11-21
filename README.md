@@ -198,7 +198,7 @@ npm run preview
 
 ## 📱 Live Demo
 
-🔗 **Try it live**: [https://habitloop-prototype-tanmoys-projects-a793323a.vercel.app](https://habitloop-prototype-tanmoys-projects-a793323a.vercel.app)
+🔗 **Try it live**: [https://project-blueprint-builder-6p0ycaki8-tanmoys-projects-a793323a.vercel.app](https://project-blueprint-builder-6p0ycaki8-tanmoys-projects-a793323a.vercel.app)
 
 > 💡 *Deployed on [Vercel](https://vercel.com)*
 
